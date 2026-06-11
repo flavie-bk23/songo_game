@@ -1,0 +1,2 @@
+Placez ici votre image Midjourney nommée board_bg.jpg
+Voir README.md pour les prompts recommandés.

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Songho — Jeu de Mancala</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/menu.css">
+</head>
+<body>
+
+<!-- COUCHE 1 : Image de fond réaliste -->
+<div id="bg-layer">
+  <canvas id="bg-canvas"></canvas>
+</div>
+
+<!-- COUCHE 3 : Three.js WebGL — plateau + graines 3D -->
+<div id="game-layer">
+  <canvas id="three-canvas"></canvas>
+</div>
+
+<!-- Compteurs de pions par case (injectés dynamiquement via JS) -->
+<div id="counters-layer"></div>
+
+<!-- COUCHE 4 : UI overlay -->
+<div id="ui-overlay">
+  <div id="score-panel">
+    <div class="score-box" id="score-j2">
+      <span class="player-label">Joueur 2</span>
+      <span class="score-val" id="val-j2">0</span>
+    </div>
+    <div id="turn-indicator">
+      <div id="turn-dot"></div>
+      <span id="turn-text">Tour : Joueur 1</span>
+    </div>
+    <div class="score-box" id="score-j1">
+      <span class="player-label">Joueur 1</span>
+      <span class="score-val" id="val-j1">0</span>
+    </div>
+  </div>
+  <div id="msg-bar">Choisissez une case pour semer (droite→gauche)</div>
+  <div id="btn-row">
+    <button id="btn-reset" onclick="resetGame()">Nouvelle partie</button>
+    <button id="btn-hint" onclick="showHint()">Indice</button>
+    <button id="btn-menu" onclick="showMenuScreen()">Menu</button>
+    <button id="btn-stop-game" onclick="stopGame()">Arrêter</button>
+  </div>
+</div>
+
+<!-- Indicateur de difficulté en jeu -->
+<div id="difficulty-badge">
+  <span id="diff-label-prefix">IA —</span>
+  <span id="diff-label-name">Expert</span>
+</div>
+
+<!-- ══════════════════════════════════════════
+     ÉCRAN D'ENTRÉE
+══════════════════════════════════════════ -->
+<div id="menu-screen">
+  <div id="menu-card">
+    <div class="menu-title">SONGO</div>
+    <div class="menu-subtitle">Jeu de Mancala Traditionnel</div>
+
+    <!-- Jouer à deux -->
+    <button class="menu-btn-main" onclick="startTwoPlayers()">
+      <span class="menu-btn-icon">♟</span>
+      Deux joueurs sur le même site
+    </button>
+
+    <button class="menu-btn-main" onclick="openRoomPanel()">
+      <span class="menu-btn-icon">🌐</span>
+      Deux joueurs à distance
+    </button>
+
+    <!-- Contre la machine -->
+    <button class="menu-btn-main" id="btn-vs-machine" onclick="toggleMachineMenu()">
+      <span class="menu-btn-icon">⚙</span>
+      Jouer contre la machine
+    </button>
+
+    <!-- Sous-menu niveaux -->
+    <div id="machine-submenu">
+      <div class="submenu-label">Choisissez un niveau de difficulté</div>
+      <div class="diff-grid">
+        <button class="diff-btn" data-level="tres-facile" onclick="startVsMachine('tres-facile')">
+          <span class="diff-name">Très facile</span>
+          <span class="diff-desc">Coups aléatoires</span>
+        </button>
+        <button class="diff-btn" data-level="facile" onclick="startVsMachine('facile')">
+          <span class="diff-name">Facile</span>
+          <span class="diff-desc">Stratégie élémentaire</span>
+        </button>
+        <button class="diff-btn" data-level="moyen" onclick="startVsMachine('moyen')">
+          <span class="diff-name">Moyen</span>
+          <span class="diff-desc">Préfère les captures</span>
+        </button>
+        <button class="diff-btn" data-level="difficile" onclick="startVsMachine('difficile')">
+          <span class="diff-name">Difficile</span>
+          <span class="diff-desc">Analyse complète du plateau</span>
+        </button>
+        <button class="diff-btn" data-level="expert" onclick="startVsMachine('expert')">
+          <span class="diff-name">Expert</span>
+          <span class="diff-desc">Anticipe et contre votre jeu</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="menu-sep"></div>
+
+    <!-- Aide -->
+    <button class="menu-btn-main" onclick="showHelp()">
+      <span class="menu-btn-icon">?</span>
+      Aide
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     ÉCRAN D'AIDE
+══════════════════════════════════════════ -->
+<div id="help-screen">
+  <div id="help-card">
+    <h2>Comment jouer au Songo</h2>
+
+    <h3>Le plateau</h3>
+    <p>Le Songo est un jeu de Mancala traditionnel Ekang (Ewondo/Bulu/Beti) du Cameroun. Le plateau comporte <span class="help-highlight">14 cases</span> : 7 pour chaque joueur, disposées en 2 rangées. Chaque case commence avec 5 graines.</p>
+
+    <h3>Le but</h3>
+    <p>Capturer au moins <span class="help-highlight">40 graines</span> avant votre adversaire. Celui qui en possède le plus à la fin de la partie gagne.</p>
+
+    <h3>Comment jouer</h3>
+    <ul>
+      <li>Cliquez sur une case de votre rangée contenant des graines.</li>
+      <li>Toutes les graines de cette case sont ramassées et distribuées <span class="help-highlight">une par une</span> dans les cases suivantes, dans le sens de la rotation.</li>
+      <li>Joueur 1 (bas) : sème de droite à gauche dans son camp, puis de gauche à droite chez J2.</li>
+      <li>Joueur 2 (haut) : sens inverse.</li>
+    </ul>
+
+    <h3>Les captures</h3>
+    <ul>
+      <li>Si la dernière graine semée atterrit dans le camp adverse sur une case contenant <span class="help-highlight">2 ou 3 graines</span> (y compris la graine posée), vous capturez toutes ces graines.</li>
+      <li>La capture est <span class="help-highlight">en chaîne</span> : si la case précédente dans le camp adverse contient aussi 2 ou 3 graines, elles sont capturées également, et ainsi de suite.</li>
+    </ul>
+
+    <h3>Règle du tour complet</h3>
+    <p>Si vous avez assez de graines pour <span class="help-highlight">faire un tour complet</span>, votre case de départ et les cases suivantes de votre propre camp sont sautées lors du second passage.</p>
+
+    <h3>Règle de solidarité</h3>
+    <p>Si le camp de votre adversaire est <span class="help-highlight">entièrement vide</span>, vous êtes obligé de jouer un coup qui lui envoie des graines. Si aucun coup ne le permet, la partie s'arrête.</p>
+
+    <h3>Règle de la case 7</h3>
+    <p>Depuis la case 7 (extrémité gauche de votre rangée), il est <span class="help-highlight">interdit</span> de semer 1 ou 2 graines dans le camp adverse.</p>
+
+    <h3>Fin de partie</h3>
+    <ul>
+      <li>Un joueur atteint 40 graines capturées.</li>
+      <li>Moins de 10 graines restent sur le plateau.</li>
+      <li>Un joueur n'a aucun coup valide disponible.</li>
+    </ul>
+
+    <button class="help-close-btn" onclick="closeHelp()">Fermer</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     PANNEAU SALLE EN LIGNE
+══════════════════════════════════════════ -->
+<div id="room-panel-overlay" onclick="closeRoomPanel(event)">
+  <div id="room-panel">
+    <button class="room-panel-close" onclick="closeRoomPanel(null)">✕</button>
+    <div class="room-panel-title">🌐 Jouer à distance</div>
+
+    <!-- Choix action -->
+    <div id="room-action-choice">
+      <button class="room-action-btn" id="btn-create-room" onclick="selectRoomAction('create')">
+        <span class="room-action-icon">＋</span>
+        <span class="room-action-label">Créer une salle</span>
+        <span class="room-action-desc">Obtenez un code à partager</span>
+      </button>
+      <button class="room-action-btn" id="btn-join-room" onclick="selectRoomAction('join')">
+        <span class="room-action-icon">→</span>
+        <span class="room-action-label">Rejoindre une salle</span>
+        <span class="room-action-desc">Entrez le code reçu</span>
+      </button>
+    </div>
+
+    <!-- Zone create -->
+    <div id="room-create-zone" class="room-zone" style="display:none">
+      <div class="room-zone-label">Votre code de salle :</div>
+      <div id="room-code-display">—</div>
+      <div class="room-share-row">
+        <button class="room-share-btn" id="btn-copy-code" onclick="copyRoomCode()" title="Copier le code">
+          📋 Copier le code
+        </button>
+        <button class="room-share-btn" id="btn-copy-link" onclick="copyRoomLink()" title="Copier le lien d'invitation">
+          🔗 Copier le lien
+        </button>
+      </div>
+      <div class="room-code-hint">Partagez le code <strong>ou</strong> le lien à l'autre joueur</div>
+      <button class="room-zone-btn" onclick="doCreateRoom()">Créer la salle</button>
+    </div>
+
+    <!-- Zone join -->
+    <div id="room-join-zone" class="room-zone" style="display:none">
+      <div class="room-zone-label">Code de la salle :</div>
+      <input id="room-code-input" class="room-code-input" type="text"
+             placeholder="SONGO-AB1234"
+             maxlength="16"
+             oninput="this.value=this.value.toUpperCase()"
+             onkeydown="if(event.key==='Enter')doJoinRoom()">
+      <button class="room-zone-btn" onclick="doJoinRoom()">Rejoindre</button>
+    </div>
+
+    <!-- Message d'état -->
+    <div id="room-panel-msg"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<!-- ══ BANDEAU BIENVENU DEFILANT ══ -->
+<div id="welcome-banner">
+  <div id="welcome-track">
+    <span class="welcome-msg">Bienvenue sur Songho. Choisissez un mode de jeu, placez vos graines et tentez de remporter la partie.</span>
+    <span class="welcome-msg">Bienvenue sur Songho. Choisissez un mode de jeu, placez vos graines et tentez de remporter la partie.</span>
+  </div>
+</div>
+<!-- Bouton musique flottant -->
+<div id="music-btn" onclick="toggleMusic()" title="Musique">
+  <span id="music-icon">🎵</span>
+  <span id="music-label">Musique</span>
+</div>
+<input id="music-volume" type="range" min="0" max="1" step="0.05" value="0.28" title="Volume musique" aria-label="Volume musique">
+<button id="music-file-btn" type="button" title="Ajouter des MP3">+ MP3</button>
+<button id="music-playlist-btn" type="button" onclick="togglePlaylistPanel()" title="Voir la playlist">Liste</button>
+<button id="music-stop-btn" type="button" onclick="SongoMusic.stop(); SongoMusic.updateMusicBtnUI(); SongoMusic.updatePlaylistUI();" title="Arrêter la musique">Arrêter</button>
+<input id="music-file-input" type="file" accept="audio/*" multiple hidden>
+
+<!-- Panneau Playlist -->
+<div id="playlist-panel">
+  <div id="playlist-header">
+    <span id="playlist-title">🎶 Playlist</span>
+    <div id="playlist-controls">
+      <button id="pl-prev" onclick="SongoMusic.playPrev()" title="Précédent">⏮</button>
+      <button id="pl-next" onclick="SongoMusic.playNext()" title="Suivant">⏭</button>
+      <button id="pl-close" onclick="togglePlaylistPanel()" title="Fermer">✕</button>
+    </div>
+  </div>
+  <ul id="songo-playlist-list"><li class="pl-empty">Aucune piste — ajoutez des MP3</li></ul>
+</div>
+<script src="js/background.js"></script>
+<script src="js/game.js"></script>
+<script src="js/three_board.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/music.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

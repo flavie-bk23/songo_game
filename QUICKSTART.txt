@@ -1,0 +1,36 @@
+═══════════════════════════════════════════════════════════════
+  🎮 SONGO — JEUX DE MANCALA 3D
+═══════════════════════════════════════════════════════════════
+
+📌 DÉMARRAGE RAPIDE
+
+1️⃣  WINDOWS
+   ➜ Double-cliquez sur : run-game.bat
+
+2️⃣  LINUX / MAC
+   ➜ Double-cliquez sur : run-game.sh
+   ➜ Ou dans terminal : bash run-game.sh
+
+3️⃣  OUVREZ VOTRE NAVIGATEUR
+   ➜ http://localhost:8000
+
+4️⃣  JOUEZ !
+   ➜ Mode 2 joueurs ou Contre la machine
+
+═══════════════════════════════════════════════════════════════
+
+🌐 JOUER EN RÉSEAU LOCAL
+
+Sur la machine qui lance le jeu, regardez l'adresse IP affichée
+(exemple : 192.168.1.100)
+
+Sur les autres machines, allez à :
+http://ADRESSE_IP:8000
+
+═══════════════════════════════════════════════════════════════
+
+❓ BESOIN D'AIDE ?
+   → Lire INSTALL.md pour les détails complets
+   → Vérifier que Python 3 est installé
+
+═══════════════════════════════════════════════════════════════
