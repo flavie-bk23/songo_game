@@ -155,56 +155,6 @@ function serveStatic(req, res, pathname) {
 const server = http.createServer(async (req, res) => {
   const requestUrl = new URL(req.url, `http://${req.headers.host}`);
   const { pathname } = requestUrl;
-  if (pathname === '/health') {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ status: 'ok' }));
-    return;
-  }
-
-  if (req.method === 'OPTIONS') {
-    sendJson(res, 200, { ok: true });
-    return;
-  }
-
-  if (pathname === '/api/rooms' && req.method === 'POST') {
-    try {
-      const body = await readBody(req);
-      const requestedRoomId = body && body.roomId ? body.roomId : '';
-      const action = body && body.action ? body.action : (requestedRoomId ? 'join' : 'create');
-      if (rooms.size >= MAX_ROOMS && !rooms.has(normalizeRoomId(requestedRoomId))) {
-        sendJson(res, 503, { error: 'Serveur surchargé' });
-        return;
-      }
-      const roomResult = createOrJoinRoom(requestedRoomId, { action });
-      if (action === 'join' && !roomResult.exists) {
-        sendJson(res, 404, { error: roomResult.error || 'Salle introuvable' });
-        return;
-      }
-      sendJson(res, 200, {
-        roomId: roomResult.roomId,
-        created: roomResult.created,
-        role: roomResult.role,
-        playerCount: roomResult.playerCount,
-        full: roomResult.full,
-        state: roomResult.state
-      });
-    } catch (e) {
-      sendJson(res, 400, { error: e.message });
-    }
-    return;
-  
-const server = http.createServer(async (req, res) => {
-  const requestUrl = new URL(req.url, `http://${req.headers.host}`);
-  const { pathname } = requestUrl;
-
-  // Endpoint de santé pour Render/UptimeRobot
-  if (pathname === '/health') {
-    res.writeHead(200, {
-      'Content-Type': 'application/json; charset=utf-8'
-    });
-    res.end(JSON.stringify({ status: 'ok' }));
-    return;
-  }
 
   if (req.method === 'OPTIONS') {
     sendJson(res, 200, { ok: true });
@@ -280,4 +230,12 @@ module.exports = {
   generateRoomCode,
   normalizeRoomId
 };
+const requestUrl = new URL(req.url, `http://${req.headers.host}`);
+const { pathname } = requestUrl;
 
+// HEALTH CHECK
+if (pathname === '/health') {
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ status: 'ok' }));
+  return;
+}
