@@ -230,3 +230,12 @@ module.exports = {
   generateRoomCode,
   normalizeRoomId
 };
+const requestUrl = new URL(req.url, `http://${req.headers.host}`);
+const { pathname } = requestUrl;
+
+// HEALTH CHECK
+if (pathname === '/health') {
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ status: 'ok' }));
+  return;
+}
