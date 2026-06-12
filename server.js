@@ -155,6 +155,11 @@ function serveStatic(req, res, pathname) {
 const server = http.createServer(async (req, res) => {
   const requestUrl = new URL(req.url, `http://${req.headers.host}`);
   const { pathname } = requestUrl;
+  if (pathname === '/health') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: 'ok' }));
+    return;
+  }
 
   if (req.method === 'OPTIONS') {
     sendJson(res, 200, { ok: true });
@@ -202,7 +207,12 @@ const server = http.createServer(async (req, res) => {
       const body = await readBody(req);
       const roomId = decodeURIComponent(match[1]);
       if (!body || !body.state) {
-        sendJson(res, 400, { error: 'État requis' });
+        sendJson(res, 400, { error: 'État requis' });if (pathname === '/health') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: 'ok' }));
+    return;
+  }
+
         return;
       }
       const room = rooms.get(roomId) || { state: null, createdAt: Date.now() };
@@ -233,9 +243,5 @@ module.exports = {
 const requestUrl = new URL(req.url, `http://${req.headers.host}`);
 const { pathname } = requestUrl;
 
-// HEALTH CHECK
-if (pathname === '/health') {
-  res.writeHead(200, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ status: 'ok' }));
-  return;
-}
+ 
+ 
